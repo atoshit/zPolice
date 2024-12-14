@@ -7,8 +7,15 @@ author 'zSquad'
 description 'zPolice'
 version '1.0.0'
 
+shared_scripts {
+    'configuration/mainConfig.lua',
+    'shared/debug.lua'
+}
+
 server_scripts {
-    'configuration/serverConfig.lua'
+    '@oxmysql/lib/MySQL.lua',
+    'configuration/serverConfig.lua',
+    'server/societyRegistration.lua'
 }
 
 client_scripts {
@@ -17,4 +24,10 @@ client_scripts {
 
 escrow_ignore {
     'configuration/*.lua'
+}
+
+dependencies {
+    'es_extended',
+    'esx_society',
+    'esx_datastore'
 }
