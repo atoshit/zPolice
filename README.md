@@ -3,3 +3,4 @@
 - es_extended
 - esx_society
 - esx_datastore
+- esx_skin
