@@ -15,18 +15,21 @@ local points = {}
 --- @param callback function The callback function when the player enters the point
 local function onEnter(self, callback)
     self.onEnterCallback = callback
+    return self
 end
 
 --- Set onExit callback
 --- @param callback function The callback function when the player exits the point
 local function onExit(self, callback)
     self.onExitCallback = callback
+    return self
 end
 
 --- Set inside callback (called every frame while inside)
 --- @param callback function The callback function called every frame while inside the point
 local function inside(self, callback)
     self.insideCallback = callback
+    return self
 end
 
 --- Start inside thread
@@ -36,7 +39,7 @@ local function startInsideThread(self)
     self.insideThread = CreateThread(function()
         while self.isInside do
             if self.insideCallback then
-                self.insideCallback()
+                self.insideCallback(self)
             end
             Wait(0)
         end
@@ -74,7 +77,7 @@ local function update(self)
         if not self.isInside then
             self.isInside = true
             if self.onEnterCallback then
-                self.onEnterCallback()
+                self.onEnterCallback(self)
             end
             self:startInsideThread()
         end
@@ -82,7 +85,7 @@ local function update(self)
         if self.isInside then
             self.isInside = false
             if self.onExitCallback then
-                self.onExitCallback()
+                self.onExitCallback(self)
             end
             self:stopInsideThread()
         end
@@ -141,14 +144,15 @@ end)
 
 local receptionPoint = createPoint(clientConfig.receptionCall.coords, clientConfig.receptionCall.radius)
 
-receptionPoint:onEnter(function()
+receptionPoint:onEnter(function(self)
     print('Player entered reception point')
 end)
 
-receptionPoint:inside(function()
+receptionPoint:inside(function(self)
     print('Player is inside reception point')
+    print(self.id)
 end)
 
-receptionPoint:onExit(function()
+receptionPoint:onExit(function(self)
     print('Player exited reception point')
 end)
