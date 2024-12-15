@@ -7,50 +7,30 @@
 --- @field public insideCallback function The callback function called every frame while inside the point
 --- @field public lastCheckTime number The last time the point was checked
 --- @field public insideThread number The thread ID for inside callback
+--- @field public id number The unique identifier of the point
 local Points = {}
-Points.__index = Points
 local points = {}
-
---- Point constructor
---- @param coords vector3 The coordinates of the point
---- @param radius number The radius of the point
---- @return Points The point object
-function Points.new(coords, radius)
-    local self = setmetatable({}, Points)
-    self.coords = coords
-    self.radius = radius
-    self.isInside = false
-    self.onEnterCallback = nil
-    self.onExitCallback = nil
-    self.insideCallback = nil
-    self.lastCheckTime = 0
-    self.insideThread = nil
-    
-    points[#points + 1] = self
-    
-    return self
-end
 
 --- Set onEnter callback
 --- @param callback function The callback function when the player enters the point
-function Points:onEnter(callback)
+local function onEnter(self, callback)
     self.onEnterCallback = callback
 end
 
 --- Set onExit callback
 --- @param callback function The callback function when the player exits the point
-function Points:onExit(callback)
+local function onExit(self, callback)
     self.onExitCallback = callback
 end
 
 --- Set inside callback (called every frame while inside)
 --- @param callback function The callback function called every frame while inside the point
-function Points:inside(callback)
+local function inside(self, callback)
     self.insideCallback = callback
 end
 
 --- Start inside thread
-function Points:startInsideThread()
+local function startInsideThread(self)
     if self.insideThread then return end
     
     self.insideThread = CreateThread(function()
@@ -64,14 +44,28 @@ function Points:startInsideThread()
 end
 
 --- Stop inside thread
-function Points:stopInsideThread()
+local function stopInsideThread(self)
     if self.insideThread then
         self.insideThread = nil
     end
 end
 
+--- Delete a point
+--- @param point Points The point to delete
+local function remove(self)
+    for i = 1, #points do
+        if points[i] == self then
+            if self.isInside then
+                self:stopInsideThread()
+            end
+            points[i] = nil
+            break
+        end
+    end
+end
+
 --- Update the point state
-function Points:update()
+local function update(self)
     local playerPed = PlayerPedId()
     local playerCoords = GetEntityCoords(playerPed)
     local distance = #(playerCoords - self.coords)
@@ -99,6 +93,35 @@ function Points:update()
     end
 end
 
+--- Point constructor
+--- @param coords vector3 The coordinates of the point
+--- @param radius number The radius of the point
+--- @return Points The point object
+function createPoint(coords, radius)
+    local self = {}
+    self.id = #points + 1
+    self.coords = coords
+    self.radius = radius
+    self.isInside = false
+    self.onEnterCallback = nil
+    self.onExitCallback = nil
+    self.insideCallback = nil
+    self.lastCheckTime = 0
+    self.insideThread = nil
+    
+    points[#points + 1] = self
+    
+    self.onEnter = onEnter
+    self.onExit = onExit
+    self.inside = inside
+    self.startInsideThread = startInsideThread
+    self.stopInsideThread = stopInsideThread
+    self.update = update
+    self.remove = remove
+    
+    return self
+end
+
 CreateThread(function()
     while true do
         local playerPed = PlayerPedId()
@@ -116,7 +139,7 @@ CreateThread(function()
     end
 end)
 
-local receptionPoint = Points.new(clientConfig.receptionCall.coords, clientConfig.receptionCall.radius)
+local receptionPoint = createPoint(clientConfig.receptionCall.coords, clientConfig.receptionCall.radius)
 
 receptionPoint:onEnter(function()
     print('Player entered reception point')
