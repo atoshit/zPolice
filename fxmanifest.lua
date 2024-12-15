@@ -19,7 +19,8 @@ server_scripts {
 }
 
 client_scripts {
-    'configuration/clientConfig.lua'
+    'configuration/clientConfig.lua',
+    'client/classes/point.lua'
 }
 
 escrow_ignore {
@@ -29,5 +30,6 @@ escrow_ignore {
 dependencies {
     'es_extended',
     'esx_society',
-    'esx_datastore'
+    'esx_datastore',
+    'esx_skin'
 }
