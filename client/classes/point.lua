@@ -1,16 +1,3 @@
---- @class Points
---- @field public coords vector3 The coordinates of the point
---- @field public radius number The radius of the point
---- @field public isInside boolean Whether the player is inside the point
---- @field public onEnterCallback function The callback function when the player enters the point
---- @field public onExitCallback function The callback function when the player exits the point
---- @field public insideCallback function The callback function called every frame while inside the point
---- @field public lastCheckTime number The last time the point was checked
---- @field public insideThread number The thread ID for inside callback
---- @field public id number The unique identifier of the point
---- @field public marker table The marker configuration
---- @field public showMarker boolean Whether to show the marker or not
-local Points = {}
 local points = {}
 local markerThread = nil
 local activeMarkers = {}
@@ -18,7 +5,6 @@ local activeMarkers = {}
 --- Set callback function
 --- @param callback function The callback function
 --- @param callbackType string The type of callback ('onEnterCallback', 'onExitCallback', or 'insideCallback')
---- @return Points The point object
 local function setCallback(self, callback, callbackType)
     local callbackTypes = {
         enter = 'onEnterCallback',
@@ -55,7 +41,6 @@ local function stopInsideThread(self)
 end
 
 --- Delete a point
---- @param point Points The point to delete
 local function remove(self)
     for i = 1, #points do
         if points[i] == self then
@@ -152,7 +137,6 @@ end
 --- @param coords vector3 The coordinates of the point
 --- @param radius number The radius of the point
 --- @param marker? table The marker configuration
---- @return Points The point object
 function createPoint(coords, radius, marker)
     local self = {
         id = #points + 1,
@@ -200,25 +184,4 @@ CreateThread(function()
         wait = hasNearbyPoints and 100 or 500
         Wait(wait)
     end
-end)
-
-local receptionPoint = createPoint(clientConfig.receptionCall.coords, clientConfig.receptionCall.radius, {
-        show = true,
-        type = 1,
-        scale = {x = 1.5, y = 1.5, z = 0.5},
-        color = {r = 0, g = 255, b = 0, a = 150},
-        zOffset = -1.0
-    }
-)   
-
-receptionPoint:onEnter(function(self)
-    print('Player entered reception point')
-end)
-
-receptionPoint:inside(function(self)
-    print('Player is inside reception point')
-end)
-
-receptionPoint:onExit(function(self)
-    print('Player exited reception point')
 end)
