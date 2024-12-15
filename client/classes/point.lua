@@ -8,8 +8,12 @@
 --- @field public lastCheckTime number The last time the point was checked
 --- @field public insideThread number The thread ID for inside callback
 --- @field public id number The unique identifier of the point
+--- @field public marker table The marker configuration
+--- @field public showMarker boolean Whether to show the marker or not
 local Points = {}
 local points = {}
+local markerThread = nil
+local activeMarkers = {}
 
 --- Set onEnter callback
 --- @param callback function The callback function when the player enters the point
@@ -61,10 +65,47 @@ local function remove(self)
             if self.isInside then
                 self:stopInsideThread()
             end
+            activeMarkers[self.id] = nil
             points[i] = nil
             break
         end
     end
+end
+
+local function startMarkerThread()
+    markerThread = CreateThread(function()
+        while next(activeMarkers) do
+            for _, point in pairs(activeMarkers) do
+                DrawMarker(
+                    point.marker.type or 1,
+                    point.coords.x,
+                    point.coords.y,
+                    point.coords.z,
+                    point.marker.dir and point.marker.dir.x or 0.0,
+                    point.marker.dir and point.marker.dir.y or 0.0,
+                    point.marker.dir and point.marker.dir.z or 0.0,
+                    point.marker.rot and point.marker.rot.x or 0.0,
+                    point.marker.rot and point.marker.rot.y or 0.0,
+                    point.marker.rot and point.marker.rot.z or 0.0,
+                    point.marker.scale and point.marker.scale.x or (point.radius * 2.0),
+                    point.marker.scale and point.marker.scale.y or (point.radius * 2.0),
+                    point.marker.scale and point.marker.scale.z or 0.5,
+                    point.marker.color and point.marker.color.r or 0,
+                    point.marker.color and point.marker.color.g or 255,
+                    point.marker.color and point.marker.color.b or 0,
+                    point.marker.color and point.marker.color.a or 150,
+                    point.marker.bobUpAndDown or false,
+                    point.marker.faceCamera or false,
+                    point.marker.p19 or 2,
+                    point.marker.rotate or false,
+                    point.marker.textureDict or nil,
+                    point.marker.textureName or nil,
+                    point.marker.drawOnEnts or false
+                )
+            end
+            Wait(0)
+        end
+    end)
 end
 
 --- Update the point state
@@ -91,16 +132,32 @@ local function update(self)
         end
     end
 
-    if distance <= 10.0 then
-        DrawMarker(1, self.coords.x, self.coords.y, self.coords.z - 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, self.radius * 2.0, self.radius * 2.0, 0.5, 0, 255, 0, 150, false, false, 2, nil, nil, false)
+    -- Gestion des markers
+    if self.marker and self.showMarker then
+        if distance <= 10.0 then
+            if not activeMarkers[self.id] then
+                activeMarkers[self.id] = self
+                if not markerThread then
+                    startMarkerThread()
+                end
+            end
+        else
+            if activeMarkers[self.id] then
+                activeMarkers[self.id] = nil
+                if not next(activeMarkers) then
+                    markerThread = nil
+                end
+            end
+        end
     end
 end
 
 --- Point constructor
 --- @param coords vector3 The coordinates of the point
 --- @param radius number The radius of the point
+--- @param marker? table The marker configuration {type, scale, color, zOffset, dir, rot, bobUpAndDown, faceCamera, p19, rotate, textureDict, textureName, drawOnEnts}
 --- @return Points The point object
-function createPoint(coords, radius)
+function createPoint(coords, radius, marker)
     local self = {}
     self.id = #points + 1
     self.coords = coords
@@ -111,6 +168,8 @@ function createPoint(coords, radius)
     self.insideCallback = nil
     self.lastCheckTime = 0
     self.insideThread = nil
+    self.marker = marker
+    self.showMarker = marker.show or false
     
     points[#points + 1] = self
     
@@ -125,6 +184,7 @@ function createPoint(coords, radius)
     return self
 end
 
+-- Thread pour la vérification des points
 CreateThread(function()
     while true do
         local playerPed = PlayerPedId()
@@ -140,19 +200,4 @@ CreateThread(function()
         
         Wait(500)
     end
-end)
-
-local receptionPoint = createPoint(clientConfig.receptionCall.coords, clientConfig.receptionCall.radius)
-
-receptionPoint:onEnter(function(self)
-    print('Player entered reception point')
-end)
-
-receptionPoint:inside(function(self)
-    print('Player is inside reception point')
-    print(self.id)
-end)
-
-receptionPoint:onExit(function(self)
-    print('Player exited reception point')
 end)
