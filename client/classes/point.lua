@@ -119,7 +119,7 @@ local function update(self)
     end
 
     if self.marker and self.showMarker then
-        local isNearMarker = distance <= 10.0
+        local isNearMarker = distance <= 5.0
         local isMarkerActive = activeMarkers[self.id] ~= nil
 
         if isNearMarker ~= isMarkerActive then
